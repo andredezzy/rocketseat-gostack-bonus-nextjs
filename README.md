@@ -1,2 +1,2 @@
-# rocketseat-bonus-nextjs
-:books: Learning about Next.js with Rocketseat bonus class
+# rocketseat-gostack-bonus-nextjs
+:books: Learning about Next.js with Rocketseat GoStack bonus class
