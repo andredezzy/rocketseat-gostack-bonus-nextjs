@@ -1,30 +1,56 @@
-import dynamic from 'next/dynamic';
+import { GetStaticPaths, GetStaticProps } from 'next';
 import { useRouter } from 'next/router';
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 
-const AddToCartModal = dynamic(() => import('@/components/AddToCartModal'), {
-  loading: () => <p>Loading...</p>,
-  ssr: false,
-});
+import PrismicDOM from 'prismic-dom';
+import { Document } from 'prismic-javascript/types/documents';
 
-const Product: React.FC = () => {
+import { client } from '@/lib/prismic';
+
+interface IProductProps {
+  product: Document;
+}
+
+const Product: React.FC<IProductProps> = ({ product }) => {
   const router = useRouter();
 
-  const [isAddToCardModalVisible, setIsAddToCardModalVisible] = useState(false);
-
-  const handleAddToCart = useCallback(() => {
-    setIsAddToCardModalVisible(true);
-  }, []);
+  if (router.isFallback) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <div>
-      <h1>Product {router.query.slug}</h1>
+      <h1>Category: {PrismicDOM.RichText.asText(product.data.title)}</h1>
 
-      <button onClick={handleAddToCart}>Add to cart</button>
+      <img src={product.data.thumbnail.url} width="300" alt="" />
 
-      {isAddToCardModalVisible && <AddToCartModal />}
+      <div
+        dangerouslySetInnerHTML={{
+          __html: PrismicDOM.RichText.asHtml(product.data.description),
+        }}
+      />
+
+      <p>Price: R$ {product.data.price}</p>
     </div>
   );
+};
+
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: true,
+});
+
+export const getStaticProps: GetStaticProps<IProductProps> = async context => {
+  const { slug } = context.params;
+
+  const product = await client().getByUID('product', String(slug), {});
+
+  return {
+    props: {
+      product,
+    },
+    revalidate: 5,
+  };
 };
 
 export default Product;

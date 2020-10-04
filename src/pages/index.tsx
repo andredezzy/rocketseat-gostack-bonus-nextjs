@@ -1,53 +1,47 @@
 import { GetServerSideProps } from 'next';
-import React, { useCallback } from 'react';
+import Link from 'next/link';
+import React from 'react';
+
+import PrismicDOM from 'prismic-dom';
+import Prismic from 'prismic-javascript';
+import { Document } from 'prismic-javascript/types/documents';
 
 import SEO from '@/components/SEO';
+import { client } from '@/lib/prismic';
 import { Title } from '@/styles/pages/Home';
 
-interface IProduct {
-  id: string;
-  title: string;
-}
-
 interface IHomeProps {
-  recommendedProducts: IProduct[];
+  recommendedProducts: Document[];
 }
 
-const Home: React.FC<IHomeProps> = ({ recommendedProducts }) => {
-  const handleSum = useCallback(async () => {
-    const { sum } = (await import('@/lib/math')).default;
+const Home: React.FC<IHomeProps> = ({ recommendedProducts }) => (
+  <div>
+    <SEO title="DevCommerce" image="boost.png" shouldExcludeTitleSuffix />
 
-    console.log(sum(2, 2));
-  }, []);
+    <section>
+      <Title>Products</Title>
 
-  return (
-    <div>
-      <SEO title="DevCommerce" image="boost.png" shouldExcludeTitleSuffix />
-
-      <section>
-        <Title>Products</Title>
-
-        <ul>
-          {recommendedProducts.map(recommendedProduct => (
-            <li key={recommendedProduct.id}>{recommendedProduct.title}</li>
-          ))}
-        </ul>
-      </section>
-
-      <button onClick={handleSum}>Sum!</button>
-    </div>
-  );
-};
+      <ul>
+        {recommendedProducts.map(recommendedProduct => (
+          <li key={recommendedProduct.id}>
+            <Link href={`/catalog/products/${recommendedProduct.uid}`}>
+              <a>{PrismicDOM.RichText.asText(recommendedProduct.data.title)}</a>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+);
 
 export const getServerSideProps: GetServerSideProps<IHomeProps> = async () => {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/recommended`,
-  );
-  const recommendedProducts = await response.json();
+  const recommendedProducts = await client().query([
+    Prismic.Predicates.at('document.type', 'product'),
+  ]);
 
   return {
     props: {
-      recommendedProducts,
+      recommendedProducts: recommendedProducts.results,
     },
   };
 };
